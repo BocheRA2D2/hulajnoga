@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ScooterHud" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.ScooterHud" parent="@android:style/Theme.DeviceDefault.NoActionBar">
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@android:color/black</item>
     </style>
 </resources>
