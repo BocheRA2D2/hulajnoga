@@ -83,6 +83,10 @@ fun PortraitHud(
         EditorWrapper("clock", uiState, onUpdateLayout) {
             HudBlock(label = "GODZINA", value = uiState.currentTime)
         }
+
+        EditorWrapper("battery", uiState, onUpdateLayout) {
+            BatteryBlock(level = uiState.batteryLevel, isCharging = uiState.isCharging)
+        }
         
         EditorWrapper("button", uiState, onUpdateLayout) {
             LargeStartStopButton(state = uiState.rideState, onClick = onStartStop)
@@ -126,6 +130,10 @@ fun LandscapeHud(
             Spacer(modifier = Modifier.height(8.dp))
             EditorWrapper("clock", uiState, onUpdateLayout) {
                 HudBlock(label = "GODZINA", value = uiState.currentTime)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            EditorWrapper("battery", uiState, onUpdateLayout) {
+                BatteryBlock(level = uiState.batteryLevel, isCharging = uiState.isCharging)
             }
         }
 

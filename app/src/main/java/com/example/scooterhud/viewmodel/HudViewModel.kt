@@ -3,7 +3,12 @@ package com.example.scooterhud.viewmodel
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Application
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.os.BatteryManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -34,6 +39,8 @@ data class HudUiState(
     val isAutoPaused: Boolean = false,
     val isPortrait: Boolean = false,
     val isEditMode: Boolean = false,
+    val batteryLevel: Int = 100,
+    val isCharging: Boolean = false,
     val layouts: Map<String, LayoutState> = emptyMap()
 )
 
@@ -54,6 +61,7 @@ class HudViewModel(application: Application) : AndroidViewModel(application) {
                 "clock" to layoutSettings.loadLayout("clock"),
                 "weather_now" to layoutSettings.loadLayout("weather_now"),
                 "weather_future" to layoutSettings.loadLayout("weather_future"),
+                "battery" to layoutSettings.loadLayout("battery"),
                 "button" to layoutSettings.loadLayout("button")
             )
         )
@@ -63,6 +71,21 @@ class HudViewModel(application: Application) : AndroidViewModel(application) {
     private var timerJob: Job? = null
     private var lastKnownLocation: android.location.Location? = null
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            intent?.let {
+                val level = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+                val scale = it.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+                val batteryPct = (level * 100 / scale.toFloat()).toInt()
+                val status = it.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+                val charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                               status == BatteryManager.BATTERY_STATUS_FULL
+                
+                _uiState.update { state -> state.copy(batteryLevel = batteryPct, isCharging = charging) }
+            }
+        }
+    }
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
@@ -80,6 +103,10 @@ class HudViewModel(application: Application) : AndroidViewModel(application) {
     init {
         startClock()
         startPeriodicWeatherRefresh()
+        
+        // Obserwuj baterię
+        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        application.registerReceiver(batteryReceiver, filter)
     }
 
     // ── Timer ──────────────────────────────────────────────────
@@ -245,5 +272,6 @@ class HudViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         super.onCleared()
         stopLocationUpdates()
+        getApplication<Application>().unregisterReceiver(batteryReceiver)
     }
 }
