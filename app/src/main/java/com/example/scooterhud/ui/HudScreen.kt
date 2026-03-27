@@ -228,6 +228,33 @@ fun HudBlock(label: String, value: String, isHighlight: Boolean = false) {
 }
 
 @Composable
+fun BatteryBlock(level: Int, isCharging: Boolean) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text("BATERIA", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                if (isCharging) "⚡$level%" else "$level%",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = when {
+                    level < 20 -> MaterialTheme.colorScheme.error
+                    isCharging -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
+            )
+        }
+    }
+}
+
+@Composable
 fun EditorWrapper(
     key: String,
     uiState: HudUiState,
