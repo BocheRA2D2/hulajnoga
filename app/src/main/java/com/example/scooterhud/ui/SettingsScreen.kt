@@ -20,6 +20,8 @@ fun SettingsScreen(
     onToggleAutoPause: () -> Unit,
     onToggleTheme: () -> Unit,
     onToggleOrientation: () -> Unit,
+    onToggleEditMode: () -> Unit,
+    onResetLayout: () -> Unit,
     onBack: () -> Unit
 ) {
     Scaffold(
@@ -65,6 +67,26 @@ fun SettingsScreen(
                 checked = uiState.isPortrait,
                 onCheckedChange = { onToggleOrientation() }
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsItem(
+                label = "Tryb edycji (Beta)",
+                description = "Dotknij i przesuń elementy na HUD",
+                checked = uiState.isEditMode,
+                onCheckedChange = { onToggleEditMode() }
+            )
+
+            if (uiState.isEditMode) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = onResetLayout,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Text("Resetuj układ do domyślnych")
+                }
+            }
 
             Spacer(modifier = Modifier.weight(1f))
             

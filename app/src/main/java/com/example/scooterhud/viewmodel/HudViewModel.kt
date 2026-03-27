@@ -7,6 +7,8 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.scooterhud.data.LayoutSettings
+import com.example.scooterhud.data.LayoutState
 import com.example.scooterhud.data.SettingsRepository
 import com.example.scooterhud.data.WeatherRepository
 import com.example.scooterhud.data.model.WeatherInfo
@@ -30,12 +32,15 @@ data class HudUiState(
     val isAutoPauseEnabled: Boolean = false,
     val isDarkTheme: Boolean = true,
     val isAutoPaused: Boolean = false,
-    val isPortrait: Boolean = false
+    val isPortrait: Boolean = false,
+    val isEditMode: Boolean = false,
+    val layouts: Map<String, LayoutState> = emptyMap()
 )
 
 class HudViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsRepo = SettingsRepository(application)
+    private val layoutSettings = LayoutSettings(application)
     private val weatherRepo = WeatherRepository()
     private val fusedLocation = LocationServices.getFusedLocationProviderClient(application)
 
@@ -43,14 +48,21 @@ class HudViewModel(application: Application) : AndroidViewModel(application) {
         HudUiState(
             isAutoPauseEnabled = settingsRepo.isAutoPauseEnabled,
             isDarkTheme = settingsRepo.isDarkTheme,
-            isPortrait = settingsRepo.isPortrait
+            isPortrait = settingsRepo.isPortrait,
+            layouts = mapOf(
+                "timer" to layoutSettings.loadLayout("timer"),
+                "clock" to layoutSettings.loadLayout("clock"),
+                "weather_now" to layoutSettings.loadLayout("weather_now"),
+                "weather_future" to layoutSettings.loadLayout("weather_future"),
+                "button" to layoutSettings.loadLayout("button")
+            )
         )
     )
     val uiState: StateFlow<HudUiState> = _uiState.asStateFlow()
 
     private var timerJob: Job? = null
     private var lastKnownLocation: android.location.Location? = null
-    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
@@ -206,6 +218,28 @@ class HudViewModel(application: Application) : AndroidViewModel(application) {
         val new = !_uiState.value.isPortrait
         settingsRepo.isPortrait = new
         _uiState.update { it.copy(isPortrait = new) }
+    }
+
+    fun toggleEditMode() {
+        _uiState.update { it.copy(isEditMode = !it.isEditMode) }
+    }
+
+    fun updateLayout(key: String, scaleDelta: Float, offsetDeltaX: Float, offsetDeltaY: Float) {
+        val current = _uiState.value.layouts[key] ?: LayoutState()
+        val newState = current.copy(
+            scale = (current.scale + scaleDelta).coerceIn(0.5f, 3.0f),
+            offsetX = current.offsetX + offsetDeltaX,
+            offsetY = current.offsetY + offsetDeltaY
+        )
+        val newMap = _uiState.value.layouts.toMutableMap().apply { put(key, newState) }
+        _uiState.update { it.copy(layouts = newMap) }
+        layoutSettings.saveLayout(key, newState)
+    }
+
+    fun resetLayouts() {
+        layoutSettings.reset()
+        val defaultMap = _uiState.value.layouts.keys.associateWith { LayoutState() }
+        _uiState.update { it.copy(layouts = defaultMap) }
     }
 
     override fun onCleared() {

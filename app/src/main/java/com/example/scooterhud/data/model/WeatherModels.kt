@@ -1,19 +1,21 @@
-package com.example.scooterhud.data.model
-
-data class OneCallResponse(
-    val current: CurrentWeather,
-    val hourly: List<HourlyWeather>
+data class CurrentWeatherResponse(
+    val main: MainData,
+    val weather: List<WeatherCondition>,
+    val name: String
 )
 
-data class CurrentWeather(
-    val temp: Double,
-    val weather: List<WeatherCondition>
+data class ForecastResponse(
+    val list: List<ForecastItem>
 )
 
-data class HourlyWeather(
+data class ForecastItem(
     val dt: Long,
-    val temp: Double,
+    val main: MainData,
     val weather: List<WeatherCondition>
+)
+
+data class MainData(
+    val temp: Double
 )
 
 data class WeatherCondition(

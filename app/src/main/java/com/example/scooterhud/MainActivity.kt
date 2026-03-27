@@ -55,7 +55,8 @@ class MainActivity : ComponentActivity() {
                             uiState = uiState,
                             onStartStop = { viewModel.onStartStop() },
                             onOpenSettings = { navController.navigate("settings") },
-                            onRefreshWeather = { viewModel.refreshWeather() }
+                            onRefreshWeather = { viewModel.refreshWeather() },
+                            onUpdateLayout = { k, s, x, y -> viewModel.updateLayout(k, s, x, y) }
                         )
                     }
                     composable("settings") {
@@ -64,6 +65,8 @@ class MainActivity : ComponentActivity() {
                             onToggleAutoPause = { viewModel.toggleAutoPause() },
                             onToggleTheme = { viewModel.toggleTheme() },
                             onToggleOrientation = { viewModel.toggleOrientation() },
+                            onToggleEditMode = { viewModel.toggleEditMode() },
+                            onResetLayout = { viewModel.resetLayouts() },
                             onBack = { navController.popBackStack() }
                         )
                     }

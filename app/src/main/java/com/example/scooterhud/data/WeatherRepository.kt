@@ -17,17 +17,20 @@ class WeatherRepository {
 
     suspend fun getWeather(lat: Double, lon: Double): Pair<WeatherInfo, WeatherInfo>? {
         return try {
-            val response = api.getWeather(lat = lat, lon = lon, apiKey = API_KEY)
+            val currentResponse = api.getCurrentWeather(lat = lat, lon = lon, apiKey = API_KEY)
+            val forecastResponse = api.getForecast(lat = lat, lon = lon, apiKey = API_KEY)
 
             val current = WeatherInfo(
-                tempCelsius = response.current.temp,
-                description = response.current.weather.firstOrNull()?.description ?: "",
-                iconCode = response.current.weather.firstOrNull()?.icon ?: ""
+                tempCelsius = currentResponse.main.temp,
+                description = currentResponse.weather.firstOrNull()?.description ?: "",
+                iconCode = currentResponse.weather.firstOrNull()?.icon ?: ""
             )
 
-            val inHour = response.hourly.getOrNull(1)?.let {
+            // Znajdź prognozę za około godzinę (dt jest w sekundach)
+            val inHour = forecastResponse.list.filter { it.dt > (System.currentTimeMillis() / 1000 + 1800) }
+                .getOrNull(0)?.let {
                 WeatherInfo(
-                    tempCelsius = it.temp,
+                    tempCelsius = it.main.temp,
                     description = it.weather.firstOrNull()?.description ?: "",
                     iconCode = it.weather.firstOrNull()?.icon ?: ""
                 )
@@ -35,6 +38,7 @@ class WeatherRepository {
 
             Pair(current, inHour)
         } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
     }

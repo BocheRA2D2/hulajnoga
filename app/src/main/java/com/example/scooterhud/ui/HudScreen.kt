@@ -10,23 +10,24 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.unit.IntOffset
+import com.example.scooterhud.data.LayoutState
 import com.example.scooterhud.data.model.WeatherInfo
 import com.example.scooterhud.viewmodel.HudUiState
 import com.example.scooterhud.viewmodel.RideState
+import kotlin.math.roundToInt
 
 @Composable
 fun HudScreen(
     uiState: HudUiState,
     onStartStop: () -> Unit,
     onOpenSettings: () -> Unit,
-    onRefreshWeather: () -> Unit
+    onRefreshWeather: () -> Unit,
+    onUpdateLayout: (String, Float, Float, Float) -> Unit = { _, _, _, _ -> }
 ) {
     Box(
         modifier = Modifier
@@ -34,6 +35,15 @@ fun HudScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(8.dp)
     ) {
+        if (uiState.isEditMode) {
+            Text(
+                "TRYB EDYCJI: Przeciągnij, aby przesunąć. Użyj +/- aby skalować.",
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
         IconButton(
             onClick = onOpenSettings,
             modifier = Modifier.align(Alignment.TopEnd)
@@ -47,63 +57,95 @@ fun HudScreen(
         }
 
         if (uiState.isPortrait) {
-            PortraitHud(uiState, onStartStop, onRefreshWeather)
+            PortraitHud(uiState, onStartStop, onRefreshWeather, onUpdateLayout)
         } else {
-            LandscapeHud(uiState, onStartStop, onRefreshWeather)
+            LandscapeHud(uiState, onStartStop, onRefreshWeather, onUpdateLayout)
         }
     }
 }
 
 @Composable
-fun PortraitHud(uiState: HudUiState, onStartStop: () -> Unit, onRefreshWeather: () -> Unit) {
+fun PortraitHud(
+    uiState: HudUiState,
+    onStartStop: () -> Unit,
+    onRefreshWeather: () -> Unit,
+    onUpdateLayout: (String, Float, Float, Float) -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        HudBlock(label = "CZAS JAZDY", value = formatElapsed(uiState.elapsedSeconds), isHighlight = uiState.rideState == RideState.RUNNING)
-        HudBlock(label = "GODZINA", value = uiState.currentTime)
+        EditorWrapper("timer", uiState, onUpdateLayout) {
+            HudBlock(label = "CZAS JAZDY", value = formatElapsed(uiState.elapsedSeconds), isHighlight = uiState.rideState == RideState.RUNNING)
+        }
         
-        LargeStartStopButton(state = uiState.rideState, onClick = onStartStop)
+        EditorWrapper("clock", uiState, onUpdateLayout) {
+            HudBlock(label = "GODZINA", value = uiState.currentTime)
+        }
+        
+        EditorWrapper("button", uiState, onUpdateLayout) {
+            LargeStartStopButton(state = uiState.rideState, onClick = onStartStop)
+        }
+
         if (uiState.isAutoPaused) {
             Text("AUTOPAUZA", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         }
 
         Row(modifier = Modifier.fillMaxWidth()) {
             Box(modifier = Modifier.weight(1f)) {
-                WeatherBlock(label = "TERAZ", weather = uiState.weatherNow, onRefresh = onRefreshWeather)
+                EditorWrapper("weather_now", uiState, onUpdateLayout) {
+                    WeatherBlock(label = "TERAZ", weather = uiState.weatherNow, onRefresh = onRefreshWeather)
+                }
             }
             Box(modifier = Modifier.weight(1f)) {
-                WeatherBlock(label = "ZA GODZINĘ", weather = uiState.weatherInHour, onRefresh = null)
+                EditorWrapper("weather_future", uiState, onUpdateLayout) {
+                    WeatherBlock(label = "ZA GODZINĘ", weather = uiState.weatherInHour, onRefresh = null)
+                }
             }
         }
     }
 }
 
 @Composable
-fun LandscapeHud(uiState: HudUiState, onStartStop: () -> Unit, onRefreshWeather: () -> Unit) {
+fun LandscapeHud(
+    uiState: HudUiState,
+    onStartStop: () -> Unit,
+    onRefreshWeather: () -> Unit,
+    onUpdateLayout: (String, Float, Float, Float) -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            HudBlock(label = "CZAS JAZDY", value = formatElapsed(uiState.elapsedSeconds), isHighlight = uiState.rideState == RideState.RUNNING)
+            EditorWrapper("timer", uiState, onUpdateLayout) {
+                HudBlock(label = "CZAS JAZDY", value = formatElapsed(uiState.elapsedSeconds), isHighlight = uiState.rideState == RideState.RUNNING)
+            }
             Spacer(modifier = Modifier.height(8.dp))
-            HudBlock(label = "GODZINA", value = uiState.currentTime)
+            EditorWrapper("clock", uiState, onUpdateLayout) {
+                HudBlock(label = "GODZINA", value = uiState.currentTime)
+            }
         }
 
         Column(modifier = Modifier.weight(0.8f), horizontalAlignment = Alignment.CenterHorizontally) {
-            LargeStartStopButton(state = uiState.rideState, onClick = onStartStop)
+            EditorWrapper("button", uiState, onUpdateLayout) {
+                LargeStartStopButton(state = uiState.rideState, onClick = onStartStop)
+            }
             if (uiState.isAutoPaused) {
                 Text("AUTOPAUZA", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
             }
         }
 
         Column(modifier = Modifier.weight(1f)) {
-            WeatherBlock(label = "TERAZ", weather = uiState.weatherNow, onRefresh = onRefreshWeather)
+            EditorWrapper("weather_now", uiState, onUpdateLayout) {
+                WeatherBlock(label = "TERAZ", weather = uiState.weatherNow, onRefresh = onRefreshWeather)
+            }
             Spacer(modifier = Modifier.height(8.dp))
-            WeatherBlock(label = "ZA GODZINĘ", weather = uiState.weatherInHour, onRefresh = null)
+            EditorWrapper("weather_future", uiState, onUpdateLayout) {
+                WeatherBlock(label = "ZA GODZINĘ", weather = uiState.weatherInHour, onRefresh = null)
+            }
         }
     }
 }
@@ -173,6 +215,54 @@ fun HudBlock(label: String, value: String, isHighlight: Boolean = false) {
                 fontFamily = FontFamily.Monospace,
                 color = if (isHighlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
+        }
+    }
+}
+
+@Composable
+fun EditorWrapper(
+    key: String,
+    uiState: HudUiState,
+    onUpdate: (String, Float, Float, Float) -> Unit,
+    content: @Composable () -> Unit
+) {
+    val layout = uiState.layouts[key] ?: LayoutState()
+    
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(layout.offsetX.roundToInt(), layout.offsetY.roundToInt()) }
+            .graphicsLayer {
+                scaleX = layout.scale
+                scaleY = layout.scale
+            }
+            .then(
+                if (uiState.isEditMode) {
+                    Modifier.pointerInput(key) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            onUpdate(key, 0f, dragAmount.x, dragAmount.y)
+                        }
+                    }
+                } else Modifier
+            )
+    ) {
+        content()
+        
+        if (uiState.isEditMode) {
+            // Kontrolki skalowania
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
+                    .padding(2.dp)
+            ) {
+                IconButton(onClick = { onUpdate(key, -0.1f, 0f, 0f) }, modifier = Modifier.size(24.dp)) {
+                    Text("-", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+                IconButton(onClick = { onUpdate(key, 0.1f, 0f, 0f) }, modifier = Modifier.size(24.dp)) {
+                    Text("+", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }
