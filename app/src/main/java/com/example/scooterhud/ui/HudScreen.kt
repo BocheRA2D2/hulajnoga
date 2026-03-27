@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.gestures.detectTapGestures
 import com.example.scooterhud.data.LayoutState
 import com.example.scooterhud.data.model.WeatherInfo
 import com.example.scooterhud.viewmodel.HudUiState
@@ -43,30 +44,28 @@ fun HudScreen(
             .padding(8.dp)
     ) {
         if (uiState.isEditMode) {
-            Text(
-                "TRYB EDYCJI: Przeciągnij, aby przesunąć. Użyj +/- aby skalować.",
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp),
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-        IconButton(
-            onClick = onOpenSettings,
-            modifier = Modifier.align(Alignment.TopEnd)
-        ) {
-            Icon(
-                Icons.Default.Settings,
-                contentDescription = "Ustawienia",
-                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                modifier = Modifier.size(26.dp)
-            )
+            Box(modifier = Modifier.fillMaxSize()) {
+                Text(
+                    "TRYB EDYCJI: Przeciągnij boki. Użyj +/- do skali.",
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 60.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Button(
+                    onClick = onOpenSettings, // W trybie edycji dajemy łatwy powrót do ustawień
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
+                ) {
+                    Text("Zakończ edycję / Ustawienia")
+                }
+            }
         }
 
         if (uiState.isPortrait) {
-            PortraitHud(uiState, onStartStop, onRefreshWeather, onUpdateLayout)
+            PortraitHud(uiState, onStartStop, onOpenSettings, onRefreshWeather, onUpdateLayout)
         } else {
-            LandscapeHud(uiState, onStartStop, onRefreshWeather, onUpdateLayout)
+            LandscapeHud(uiState, onStartStop, onOpenSettings, onRefreshWeather, onUpdateLayout)
         }
     }
 }
@@ -88,7 +87,11 @@ fun PortraitHud(
         }
         
         EditorWrapper("clock", uiState, onUpdateLayout) {
-            HudBlock(label = "GODZINA", value = uiState.currentTime)
+            HudBlock(
+                label = "GODZINA", 
+                value = uiState.currentTime, 
+                onDoubleClick = onOpenSettings
+            )
         }
 
         EditorWrapper("battery", uiState, onUpdateLayout) {
@@ -136,7 +139,11 @@ fun LandscapeHud(
             }
             Spacer(modifier = Modifier.height(8.dp))
             EditorWrapper("clock", uiState, onUpdateLayout) {
-                HudBlock(label = "GODZINA", value = uiState.currentTime)
+                HudBlock(
+                    label = "GODZINA", 
+                    value = uiState.currentTime,
+                    onDoubleClick = onOpenSettings
+                )
             }
             Spacer(modifier = Modifier.height(8.dp))
             EditorWrapper("battery", uiState, onUpdateLayout) {
@@ -213,10 +220,24 @@ fun LargeStartStopButton(state: RideState, onClick: () -> Unit) {
 }
 
 @Composable
-fun HudBlock(label: String, value: String, isHighlight: Boolean = false) {
+fun HudBlock(
+    label: String, 
+    value: String, 
+    isHighlight: Boolean = false,
+    onDoubleClick: (() -> Unit)? = null
+) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp)
+            .then(
+                if (onDoubleClick != null) {
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures(onDoubleTap = { onDoubleClick() })
+                    }
+                } else Modifier
+            )
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
