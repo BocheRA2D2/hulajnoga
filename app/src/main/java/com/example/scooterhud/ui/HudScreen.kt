@@ -155,6 +155,28 @@ fun LargeStartStopButton(state: RideState, onClick: () -> Unit) {
     }
 }
 
+@Composable
+fun HudBlock(label: String, value: String, isHighlight: Boolean = false) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+            Text(
+                value,
+                fontSize = 42.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                color = if (isHighlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
 private fun formatElapsed(seconds: Long): String {
     val h = seconds / 3600
     val m = (seconds % 3600) / 60
