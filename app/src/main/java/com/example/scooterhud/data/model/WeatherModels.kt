@@ -1,3 +1,5 @@
+package com.example.scooterhud.data.model
+
 data class CurrentWeatherResponse(
     val main: MainData,
     val weather: List<WeatherCondition>,
