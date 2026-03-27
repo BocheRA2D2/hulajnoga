@@ -74,6 +74,7 @@ fun HudScreen(
 fun PortraitHud(
     uiState: HudUiState,
     onStartStop: () -> Unit,
+    onOpenSettings: () -> Unit,
     onRefreshWeather: () -> Unit,
     onUpdateLayout: (String, Float, Float, Float) -> Unit
 ) {
@@ -125,6 +126,7 @@ fun PortraitHud(
 fun LandscapeHud(
     uiState: HudUiState,
     onStartStop: () -> Unit,
+    onOpenSettings: () -> Unit,
     onRefreshWeather: () -> Unit,
     onUpdateLayout: (String, Float, Float, Float) -> Unit
 ) {
