@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
@@ -119,7 +120,7 @@ fun WeatherBlock(label: String, weather: WeatherInfo?, onRefresh: (() -> Unit)?)
                     onClick = onRefresh,
                     modifier = Modifier.align(Alignment.TopEnd).size(24.dp)
                 ) {
-                    Icon(androidx.compose.material.icons.filled.Refresh, contentDescription = "Odśwież", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.Refresh, contentDescription = "Odśwież", tint = MaterialTheme.colorScheme.primary)
                 }
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {

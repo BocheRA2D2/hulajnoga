@@ -5,8 +5,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class WeatherRepository {
-
-        const val API_KEY = "1a2bd67974b9a6025c9e245b42a4c530"
+    companion object {
+        private const val API_KEY = "1a2bd67974b9a6025c9e245b42a4c530"
+    }
 
     private val api: WeatherApi = Retrofit.Builder()
         .baseUrl("https://api.openweathermap.org/")
