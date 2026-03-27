@@ -41,13 +41,21 @@ class MainActivity : ComponentActivity() {
             val uiState by viewModel.uiState.collectAsState()
             val navController = rememberNavController()
 
+            // Dynamiczna zmiana orientacji
+            requestedOrientation = if (uiState.isPortrait) {
+                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            } else {
+                android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            }
+
             ScooterHudTheme(darkTheme = uiState.isDarkTheme) {
                 NavHost(navController = navController, startDestination = "hud") {
                     composable("hud") {
                         HudScreen(
                             uiState = uiState,
                             onStartStop = { viewModel.onStartStop() },
-                            onOpenSettings = { navController.navigate("settings") }
+                            onOpenSettings = { navController.navigate("settings") },
+                            onRefreshWeather = { viewModel.refreshWeather() }
                         )
                     }
                     composable("settings") {
@@ -55,6 +63,7 @@ class MainActivity : ComponentActivity() {
                             uiState = uiState,
                             onToggleAutoPause = { viewModel.toggleAutoPause() },
                             onToggleTheme = { viewModel.toggleTheme() },
+                            onToggleOrientation = { viewModel.toggleOrientation() },
                             onBack = { navController.popBackStack() }
                         )
                     }

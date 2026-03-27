@@ -14,8 +14,13 @@ class SettingsRepository(context: Context) {
         get() = prefs.getBoolean(KEY_DARK_THEME, true)
         set(value) = prefs.edit().putBoolean(KEY_DARK_THEME, value).apply()
 
+    var isPortrait: Boolean
+        get() = prefs.getBoolean(KEY_PORTRAIT, false)
+        set(value) = prefs.edit().putBoolean(KEY_PORTRAIT, value).apply()
+
     companion object {
         private const val KEY_AUTO_PAUSE = "auto_pause"
         private const val KEY_DARK_THEME = "dark_theme"
+        private const val KEY_PORTRAIT = "is_portrait"
     }
 }

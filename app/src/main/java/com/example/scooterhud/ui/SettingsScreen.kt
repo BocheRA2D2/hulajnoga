@@ -19,6 +19,7 @@ fun SettingsScreen(
     uiState: HudUiState,
     onToggleAutoPause: () -> Unit,
     onToggleTheme: () -> Unit,
+    onToggleOrientation: () -> Unit,
     onBack: () -> Unit
 ) {
     Scaffold(
@@ -29,11 +30,7 @@ fun SettingsScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Powrót")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         }
     ) { padding ->
@@ -42,22 +39,31 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
-                .padding(24.dp)
+                .padding(16.dp)
         ) {
             SettingsItem(
                 label = "Autopauza",
-                description = "Automatycznie zatrzymuj timer, gdy się nie ruszysz",
+                description = "Zatrzymuj timer przy braku ruchu",
                 checked = uiState.isAutoPauseEnabled,
                 onCheckedChange = { onToggleAutoPause() }
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             SettingsItem(
                 label = "Ciemny motyw",
-                description = "Zalecany do jazdy nocą dla lepszej widoczności",
+                description = "Zalecany do jazdy nocą",
                 checked = uiState.isDarkTheme,
                 onCheckedChange = { onToggleTheme() }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsItem(
+                label = "Układ pionowy",
+                description = "Włącz dla uchwytów pionowych",
+                checked = uiState.isPortrait,
+                onCheckedChange = { onToggleOrientation() }
             )
 
             Spacer(modifier = Modifier.weight(1f))

@@ -24,13 +24,14 @@ import com.example.scooterhud.viewmodel.RideState
 fun HudScreen(
     uiState: HudUiState,
     onStartStop: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onRefreshWeather: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(12.dp)
+            .padding(8.dp)
     ) {
         IconButton(
             onClick = onOpenSettings,
@@ -44,114 +45,92 @@ fun HudScreen(
             )
         }
 
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // ── Lewa kolumna: Timer i Czas
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                HudBlock(
-                    label = "CZAS JAZDY",
-                    value = formatElapsed(uiState.elapsedSeconds),
-                    isHighlight = uiState.rideState == RideState.RUNNING
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                HudBlock(
-                    label = "GODZINA",
-                    value = uiState.currentTime
-                )
-            }
+        if (uiState.isPortrait) {
+            PortraitHud(uiState, onStartStop, onRefreshWeather)
+        } else {
+            LandscapeHud(uiState, onStartStop, onRefreshWeather)
+        }
+    }
+}
 
-            // ── Środek: Przycisk START/STOP
-            Column(
-                modifier = Modifier.weight(0.8f),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                LargeStartStopButton(
-                    state = uiState.rideState,
-                    onClick = onStartStop
-                )
-                if (uiState.isAutoPaused) {
-                    Text(
-                        "AUTOPAUZA",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+@Composable
+fun PortraitHud(uiState: HudUiState, onStartStop: () -> Unit, onRefreshWeather: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        HudBlock(label = "CZAS JAZDY", value = formatElapsed(uiState.elapsedSeconds), isHighlight = uiState.rideState == RideState.RUNNING)
+        HudBlock(label = "GODZINA", value = uiState.currentTime)
+        
+        LargeStartStopButton(state = uiState.rideState, onClick = onStartStop)
+        if (uiState.isAutoPaused) {
+            Text("AUTOPAUZA", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        }
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Box(modifier = Modifier.weight(1f)) {
+                WeatherBlock(label = "TERAZ", weather = uiState.weatherNow, onRefresh = onRefreshWeather)
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                WeatherBlock(label = "ZA GODZINĘ", weather = uiState.weatherInHour, onRefresh = null)
+            }
+        }
+    }
+}
+
+@Composable
+fun LandscapeHud(uiState: HudUiState, onStartStop: () -> Unit, onRefreshWeather: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            HudBlock(label = "CZAS JAZDY", value = formatElapsed(uiState.elapsedSeconds), isHighlight = uiState.rideState == RideState.RUNNING)
+            Spacer(modifier = Modifier.height(8.dp))
+            HudBlock(label = "GODZINA", value = uiState.currentTime)
+        }
+
+        Column(modifier = Modifier.weight(0.8f), horizontalAlignment = Alignment.CenterHorizontally) {
+            LargeStartStopButton(state = uiState.rideState, onClick = onStartStop)
+            if (uiState.isAutoPaused) {
+                Text("AUTOPAUZA", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
+            }
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            WeatherBlock(label = "TERAZ", weather = uiState.weatherNow, onRefresh = onRefreshWeather)
+            Spacer(modifier = Modifier.height(8.dp))
+            WeatherBlock(label = "ZA GODZINĘ", weather = uiState.weatherInHour, onRefresh = null)
+        }
+    }
+}
+
+@Composable
+fun WeatherBlock(label: String, weather: WeatherInfo?, onRefresh: (() -> Unit)?) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+    ) {
+        Box(modifier = Modifier.padding(8.dp)) {
+            if (onRefresh != null) {
+                IconButton(
+                    onClick = onRefresh,
+                    modifier = Modifier.align(Alignment.TopEnd).size(24.dp)
+                ) {
+                    Icon(androidx.compose.material.icons.filled.Refresh, contentDescription = "Odśwież", tint = MaterialTheme.colorScheme.primary)
                 }
             }
-
-            // ── Prawa kolumna: Pogoda
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                WeatherBlock(
-                    label = "POGODA TERAZ",
-                    weather = uiState.weatherNow
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                WeatherBlock(
-                    label = "ZA GODZINĘ",
-                    weather = uiState.weatherInHour
-                )
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(weather?.emoji ?: "🌡️", fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(weather?.tempFormatted ?: "--°C", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                }
+                Text(weather?.description ?: "brak danych", fontSize = 10.sp, textAlign = TextAlign.Center, maxLines = 1)
             }
-        }
-    }
-}
-
-@Composable
-fun HudBlock(label: String, value: String, isHighlight: Boolean = false) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-            Text(
-                value,
-                fontSize = 42.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace,
-                color = if (isHighlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-fun WeatherBlock(label: String, weather: WeatherInfo?) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(weather?.emoji ?: "🌡️", fontSize = 32.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    weather?.tempFormatted ?: "--°C",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Text(
-                weather?.description ?: "brak danych",
-                fontSize = 12.sp,
-                textAlign = TextAlign.Center,
-                maxLines = 1
-            )
         }
     }
 }

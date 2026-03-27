@@ -29,7 +29,8 @@ data class HudUiState(
     val weatherInHour: WeatherInfo? = null,
     val isAutoPauseEnabled: Boolean = false,
     val isDarkTheme: Boolean = true,
-    val isAutoPaused: Boolean = false
+    val isAutoPaused: Boolean = false,
+    val isPortrait: Boolean = false
 )
 
 class HudViewModel(application: Application) : AndroidViewModel(application) {
@@ -41,7 +42,8 @@ class HudViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(
         HudUiState(
             isAutoPauseEnabled = settingsRepo.isAutoPauseEnabled,
-            isDarkTheme = settingsRepo.isDarkTheme
+            isDarkTheme = settingsRepo.isDarkTheme,
+            isPortrait = settingsRepo.isPortrait
         )
     )
     val uiState: StateFlow<HudUiState> = _uiState.asStateFlow()
@@ -120,6 +122,10 @@ class HudViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun refreshWeather() {
+        lastKnownLocation?.let { fetchWeather(it.latitude, it.longitude) }
+    }
+
     private fun startPeriodicWeatherRefresh() {
         viewModelScope.launch {
             while (isActive) {
@@ -194,6 +200,12 @@ class HudViewModel(application: Application) : AndroidViewModel(application) {
         val new = !_uiState.value.isDarkTheme
         settingsRepo.isDarkTheme = new
         _uiState.update { it.copy(isDarkTheme = new) }
+    }
+
+    fun toggleOrientation() {
+        val new = !_uiState.value.isPortrait
+        settingsRepo.isPortrait = new
+        _uiState.update { it.copy(isPortrait = new) }
     }
 
     override fun onCleared() {
