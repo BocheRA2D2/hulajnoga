@@ -1,0 +1,40 @@
+Ogólne założenia
+Aplikacja działa jako ekran pomocniczy HUD zamontowany na kierownicy hulajnogi. Jej jedynym zadaniem jest wyświetlanie danych w czasie jazdy. Nie steruje hulajnogą ani nie łączy się z jej głównym ekranem.
+
+Ekran główny (HUD)
+Cztery stałe bloki widoczne przez cały czas jazdy:
+
+Czas jazdy — odlicza od momentu wciśnięcia START w formacie HH:MM:SS; zatrzymuje się przy pauzie (ręcznej lub autopauzie), wznawia po jej odwołaniu
+
+Aktualna godzina — pobierana z zegara systemowego, odświeżana co sekundę
+
+Pogoda teraz — temperatura w °C, ikona pogody i krótki opis (np. „pochmurno"), odświeżana co kilka minut
+
+Pogoda za godzinę — prognoza +1h w tym samym formacie co pogoda aktualna
+
+Przycisk START / STOP jest wyraźnie widoczny i łatwy do wciśnięcia podczas jazdy (duży obszar dotyku).
+
+Ustawienia
+Dostęp przez ikonę/przycisk w rogu ekranu głównego. Zawiera dokładnie dwie opcje:
+
+Autopauza — przełącznik włącz/wyłącz; gdy włączona, timer automatycznie pauzuje przy wykryciu braku ruchu
+
+Motyw — wybór między jasnym a ciemnym; ciemny motyw zalecany do jazdy nocnej (mniejsze oślepianie)
+
+Temperatura jest zawsze w °C — brak możliwości zmiany jednostek.
+
+Zachowanie autopauzy
+Gdy włączona: timer zatrzymuje się automatycznie po kilku sekundach braku ruchu i wznawia się po ponownym ruszeniu
+
+Gdy wyłączona: timer działa nieprzerwanie od START do momentu ręcznego zatrzymania przez użytkownika
+
+Użytkownik zawsze widzi wyraźny wskaźnik stanu — czy timer aktualnie liczy, czy jest zapauzowany
+
+Wymagania ogólne
+Ekran telefonu jest stale włączony przez cały czas działania aplikacji
+
+Aplikacja wymaga dostępu do lokalizacji (na potrzeby pogody i ewentualnie autopauzy) oraz dostępu do internetu
+
+Lokalizacja do pogody pobierana jest automatycznie przez GPS — użytkownik jej nie ustawia ręcznie
+
+Interfejs jest czytelny na słońcu — duże czcionki, wysoki kontrast, minimalna liczba elementów

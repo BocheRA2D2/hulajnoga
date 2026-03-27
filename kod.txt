@@ -1,0 +1,566 @@
+Struktura projektu
+text
+app/
+├── build.gradle.kts
+├── src/main/
+│   ├── AndroidManifest.xml
+│   ├── java/com/example/scooterhud/
+│   │   ├── MainActivity.kt
+│   │   ├── data/
+│   │   │   ├── model/WeatherModels.kt
+│   │   │   ├── WeatherApi.kt
+│   │   │   ├── WeatherRepository.kt
+│   │   │   └── SettingsRepository.kt
+│   │   ├── viewmodel/
+│   │   │   └── HudViewModel.kt
+│   │   └── ui/
+│   │       ├── theme/Color.kt
+│   │       ├── theme/Theme.kt
+│   │       ├── HudScreen.kt
+│   │       └── SettingsScreen.kt
+│   └── res/values/
+│       ├── strings.xml
+│       └── themes.xml
+build.gradle.kts (projekt)
+kotlin
+plugins {
+    id("com.android.application") version "8.5.0" apply false
+    id("org.jetbrains.kotlin.android") version "2.0.0" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.0" apply false
+}
+app/build.gradle.kts
+kotlin
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
+
+android {
+    namespace = "com.example.scooterhud"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.example.scooterhud"
+        minSdk = 26
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    kotlinOptions { jvmTarget = "11" }
+    buildFeatures { compose = true }
+}
+
+dependencies {
+    val composeBom = platform("androidx.compose:compose-bom:2024.09.00")
+    implementation(composeBom)
+
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5")
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.navigation:navigation-compose:2.8.0")
+
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+}
+AndroidManifest.xml
+xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ScooterHud">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="stateHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+    </application>
+</manifest>
+res/values/strings.xml
+xml
+<resources>
+    <string name="app_name">ScooterHUD</string>
+</resources>
+res/values/themes.xml
+xml
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ScooterHud" parent="android:Theme.Material.Light.NoTitleBar.Fullscreen"/>
+</resources>
+data/model/WeatherModels.kt
+kotlin
+package com.example.scooterhud.data.model
+
+data class OneCallResponse(
+    val current: CurrentWeather,
+    val hourly: List<HourlyWeather>
+)
+
+data class CurrentWeather(
+    val temp: Double,
+    val weather: List<WeatherCondition>
+)
+
+data class HourlyWeather(
+    val dt: Long,
+    val temp: Double,
+    val weather: List<WeatherCondition>
+)
+
+data class WeatherCondition(
+    val id: Int,
+    val main: String,
+    val description: String,
+    val icon: String
+)
+
+data class WeatherInfo(
+    val tempCelsius: Double,
+    val description: String,
+    val iconCode: String
+) {
+    val emoji: String
+        get() = when {
+            iconCode.startsWith("01") -> "☀️"
+            iconCode.startsWith("02") -> "🌤️"
+            iconCode.startsWith("03") -> "☁️"
+            iconCode.startsWith("04") -> "☁️"
+            iconCode.startsWith("09") -> "🌧️"
+            iconCode.startsWith("10") -> "🌦️"
+            iconCode.startsWith("11") -> "⛈️"
+            iconCode.startsWith("13") -> "❄️"
+            iconCode.startsWith("50") -> "🌫️"
+            else -> "🌡️"
+        }
+
+    val tempFormatted: String get() = "${tempCelsius.toInt()}°C"
+}
+data/WeatherApi.kt
+kotlin
+package com.example.scooterhud.data
+
+import com.example.scooterhud.data.model.OneCallResponse
+import retrofit2.http.GET
+import retrofit2.http.Query
+
+interface WeatherApi {
+
+    @GET("data/3.0/onecall")
+    suspend fun getWeather(
+        @Query("lat") lat: Double,
+        @Query("lon") lon: Double,
+        @Query("exclude") exclude: String = "minutely,daily,alerts",
+        @Query("units") units: String = "metric",
+        @Query("lang") lang: String = "pl",
+        @Query("appid") apiKey: String
+    ): OneCallResponse
+}
+data/WeatherRepository.kt
+kotlin
+package com.example.scooterhud.data
+
+import com.example.scooterhud.data.model.WeatherInfo
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+
+class WeatherRepository {
+
+    companion object {
+        // ⚠️ Wklej tutaj swój klucz z https://openweathermap.org/api
+        const val API_KEY = "TWÓJ_KLUCZ_API_TUTAJ"
+    }
+
+    private val api: WeatherApi = Retrofit.Builder()
+        .baseUrl("https://api.openweathermap.org/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(WeatherApi::class.java)
+
+    suspend fun getWeather(lat: Double, lon: Double): Pair<WeatherInfo, WeatherInfo>? {
+        return try {
+            val response = api.getWeather(lat = lat, lon = lon, apiKey = API_KEY)
+
+            val current = WeatherInfo(
+                tempCelsius = response.current.temp,
+                description = response.current.weather.firstOrNull()?.description ?: "",
+                iconCode = response.current.weather.firstOrNull()?.icon ?: ""
+            )
+
+            val inHour = response.hourly.getOrNull(1)?.let {
+                WeatherInfo(
+                    tempCelsius = it.temp,
+                    description = it.weather.firstOrNull()?.description ?: "",
+                    iconCode = it.weather.firstOrNull()?.icon ?: ""
+                )
+            } ?: current
+
+            Pair(current, inHour)
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+data/SettingsRepository.kt
+kotlin
+package com.example.scooterhud.data
+
+import android.content.Context
+
+class SettingsRepository(context: Context) {
+
+    private val prefs = context.getSharedPreferences("scooter_hud_prefs", Context.MODE_PRIVATE)
+
+    var isAutoPauseEnabled: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_PAUSE, false)
+        set(value) = prefs.edit().putBoolean(KEY_AUTO_PAUSE, value).apply()
+
+    var isDarkTheme: Boolean
+        get() = prefs.getBoolean(KEY_DARK_THEME, true)
+        set(value) = prefs.edit().putBoolean(KEY_DARK_THEME, value).apply()
+
+    companion object {
+        private const val KEY_AUTO_PAUSE = "auto_pause"
+        private const val KEY_DARK_THEME = "dark_theme"
+    }
+}
+viewmodel/HudViewModel.kt
+kotlin
+package com.example.scooterhud.viewmodel
+
+import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Application
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.scooterhud.data.SettingsRepository
+import com.example.scooterhud.data.WeatherRepository
+import com.example.scooterhud.data.model.WeatherInfo
+import com.google.android.gms.location.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import java.text.SimpleDateFormat
+import java.util.*
+
+enum class RideState { STOPPED, RUNNING, PAUSED }
+
+data class HudUiState(
+    val rideState: RideState = RideState.STOPPED,
+    val elapsedSeconds: Long = 0L,
+    val currentTime: String = "--:--:--",
+    val weatherNow: WeatherInfo? = null,
+    val weatherInHour: WeatherInfo? = null,
+    val isAutoPauseEnabled: Boolean = false,
+    val isDarkTheme: Boolean = true,
+    val isAutoPaused: Boolean = false
+)
+
+class HudViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val settingsRepo = SettingsRepository(application)
+    private val weatherRepo = WeatherRepository()
+    private val fusedLocation = LocationServices.getFusedLocationProviderClient(application)
+
+    private val _uiState = MutableStateFlow(
+        HudUiState(
+            isAutoPauseEnabled = settingsRepo.isAutoPauseEnabled,
+            isDarkTheme = settingsRepo.isDarkTheme
+        )
+    )
+    val uiState: StateFlow<HudUiState> = _uiState.asStateFlow()
+
+    private var timerJob: Job? = null
+    private var lastKnownLocation: android.location.Location? = null
+    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(result: LocationResult) {
+            val location = result.lastLocation ?: return
+            handleAutoPause(location.speed)
+
+            val prev = lastKnownLocation
+            if (prev == null || location.distanceTo(prev) > 500f) {
+                lastKnownLocation = location
+                fetchWeather(location.latitude, location.longitude)
+            }
+        }
+    }
+
+    init {
+        startClock()
+        startPeriodicWeatherRefresh()
+    }
+
+    // ── Timer ──────────────────────────────────────────────────
+
+    fun onStartStop() {
+        when (_uiState.value.rideState) {
+            RideState.STOPPED -> {
+                _uiState.update { it.copy(rideState = RideState.RUNNING, elapsedSeconds = 0L, isAutoPaused = false) }
+                startTimer()
+            }
+            RideState.RUNNING, RideState.PAUSED -> {
+                stopTimer()
+                _uiState.update { it.copy(rideState = RideState.STOPPED, isAutoPaused = false) }
+            }
+        }
+    }
+
+    private fun startTimer() {
+        timerJob?.cancel()
+        timerJob = viewModelScope.launch {
+            while (isActive) {
+                delay(1000L)
+                _uiState.update { it.copy(elapsedSeconds = it.elapsedSeconds + 1) }
+            }
+        }
+    }
+
+    private fun stopTimer() {
+        timerJob?.cancel()
+        timerJob = null
+    }
+
+    // ── Clock ──────────────────────────────────────────────────
+
+    private fun startClock() {
+        viewModelScope.launch {
+            while (isActive) {
+                _uiState.update { it.copy(currentTime = timeFormat.format(Date())) }
+                delay(1000L)
+            }
+        }
+    }
+
+    // ── Weather ────────────────────────────────────────────────
+
+    private fun fetchWeather(lat: Double, lon: Double) {
+        viewModelScope.launch {
+            val result = weatherRepo.getWeather(lat, lon)
+            result?.let { (now, inHour) ->
+                _uiState.update { it.copy(weatherNow = now, weatherInHour = inHour) }
+            }
+        }
+    }
+
+    private fun startPeriodicWeatherRefresh() {
+        viewModelScope.launch {
+            while (isActive) {
+                delay(10 * 60 * 1000L) // co 10 minut
+                lastKnownLocation?.let { fetchWeather(it.latitude, it.longitude) }
+            }
+        }
+    }
+
+    // ── Auto-pause ─────────────────────────────────────────────
+
+    private fun handleAutoPause(speedMs: Float) {
+        if (!_uiState.value.isAutoPauseEnabled) return
+        val isMoving = speedMs > 0.5f // próg: ~1.8 km/h
+        val state = _uiState.value.rideState
+
+        when {
+            state == RideState.RUNNING && !isMoving -> {
+                stopTimer()
+                _uiState.update { it.copy(rideState = RideState.PAUSED, isAutoPaused = true) }
+            }
+            state == RideState.PAUSED && _uiState.value.isAutoPaused && isMoving -> {
+                _uiState.update { it.copy(rideState = RideState.RUNNING, isAutoPaused = false) }
+                startTimer()
+            }
+        }
+    }
+
+    // ── Location ───────────────────────────────────────────────
+
+    @SuppressLint("MissingPermission")
+    fun startLocationUpdates() {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            getApplication(), Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
+            getApplication(), Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!hasPermission) return
+
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L)
+            .setMinUpdateIntervalMillis(3000L)
+            .build()
+
+        fusedLocation.requestLocationUpdates(request, locationCallback, null)
+
+        fusedLocation.lastLocation.addOnSuccessListener { loc ->
+            loc?.let {
+                lastKnownLocation = it
+                fetchWeather(it.latitude, it.longitude)
+            }
+        }
+    }
+
+    fun stopLocationUpdates() {
+        fusedLocation.removeLocationUpdates(locationCallback)
+    }
+
+    // ── Settings ───────────────────────────────────────────────
+
+    fun toggleAutoPause() {
+        val new = !_uiState.value.isAutoPauseEnabled
+        settingsRepo.isAutoPauseEnabled = new
+        _uiState.update { it.copy(isAutoPauseEnabled = new, isAutoPaused = if (!new) false else it.isAutoPaused) }
+        if (!new && _uiState.value.rideState == RideState.PAUSED && _uiState.value.isAutoPaused) {
+            _uiState.update { it.copy(rideState = RideState.RUNNING) }
+            startTimer()
+        }
+    }
+
+    fun toggleTheme() {
+        val new = !_uiState.value.isDarkTheme
+        settingsRepo.isDarkTheme = new
+        _uiState.update { it.copy(isDarkTheme = new) }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopLocationUpdates()
+    }
+}
+ui/theme/Color.kt
+kotlin
+package com.example.scooterhud.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+// Ciemny motyw
+val DarkBackground  = Color(0xFF0D0D0D)
+val DarkSurface     = Color(0xFF1C1C1C)
+val DarkPrimary     = Color(0xFF4CAF50)
+val DarkOnBg        = Color(0xFFE0E0E0)
+val DarkAccent      = Color(0xFF81C784)
+
+// Jasny motyw
+val LightBackground = Color(0xFFF2F2F2)
+val LightSurface    = Color(0xFFFFFFFF)
+val LightPrimary    = Color(0xFF2E7D32)
+val LightOnBg       = Color(0xFF1A1A1A)
+val LightAccent     = Color(0xFF388E3C)
+ui/theme/Theme.kt
+kotlin
+package com.example.scooterhud.ui.theme
+
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+
+private val DarkColorScheme = darkColorScheme(
+    primary    = DarkPrimary,
+    background = DarkBackground,
+    surface    = DarkSurface,
+    onBackground = DarkOnBg,
+    onSurface  = DarkOnBg,
+    secondary  = DarkAccent
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary    = LightPrimary,
+    background = LightBackground,
+    surface    = LightSurface,
+    onBackground = LightOnBg,
+    onSurface  = LightOnBg,
+    secondary  = LightAccent
+)
+
+@Composable
+fun ScooterHudTheme(darkTheme: Boolean = true, content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+        content = content
+    )
+}
+ui/HudScreen.kt
+kotlin
+package com.example.scooterhud.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.scooterhud.data.model.WeatherInfo
+import com.example.scooterhud.viewmodel.HudUiState
+import com.example.scooterhud.viewmodel.RideState
+
+@Composable
+fun HudScreen(
+    uiState: HudUiState,
+    onStartStop: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(12.dp)
+    ) {
+        IconButton(
+            onClick = onOpenSettings,
+            modifier = Modifier.align(Alignment.TopEnd)
+        ) {
+            Icon(
+                Icons.Default.Settings,
+                contentDescription = "Ustawienia",
+                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                modifier = Modifier.size(26.dp)
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // ── Lewa kolumna: Timer
